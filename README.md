@@ -1,22 +1,10 @@
 # Hephaestus Scan Agent
 
-Hephaestus Scan Agent 是一个可独立部署的扫描节点运行目录，用于连接 Hephaestus 服务端并执行下发任务。
+Hephaestus Scan Agent 是一个可独立部署的扫描节点运行目录，用于连接 Hephaestus 服务端并执行下发任务（**仅供Pro版本用户使用**）。
 
 ## 使用方法
 
-1. 确保目录中存在以下内容：
-
-```text
-agent-standalone/
-├── config.yaml
-├── hephaestus-scan-agent
-└── config/
-    ├── crack/
-    ├── dirsearch/
-    └── pocs/
-```
-
-2. 首次启动前，如果当前目录不存在 `config.yaml`，Agent 会自动在二进制同级生成一份默认配置。
+1. 首次启动前，如果当前目录不存在 `config.yaml`，Agent 会自动在二进制同级生成一份默认配置。
 
 3. 按需修改生成后的 `config.yaml`。
 
@@ -33,25 +21,20 @@ database:
   sslmode: disable
 
 agent:
-  id: scan-agent-1
-  displayName: Scan Agent 1
-  version: stable
-  capabilities:
-    - webscan
-    - portscan
-    - crack
-    - dirscan
-    - jsscan
-  server:
-    address: http://你的Hephaestus服务IP:18181
+  id: {{随机uuid不可更改}}
 ```
 
 说明：
 
-- `database` 需要指向 Hephaestus 服务端正在使用的同一套数据库。
-- `agent.server.address` 需要指向 Hephaestus 服务端地址。
+- `database` 需要指向 Hephaestus web端正在使用的同一套数据库。
 - `config.yaml` 中不包含单独的许可证密钥字段。
-- `AGENT_ID`、`AGENT_DISPLAY_NAME`、`AGENT_VERSION`、`AGENT_TYPES` 等环境变量会覆盖 `config.yaml` 中对应配置。
+- 如果同级的`config.yaml`不存在会顺延到替补配置文件`~/.config/hephaestus/config.yaml`
+
+3. 配置服务端Agent管理页中的 [**设置 - Agent服务端地址**]
+
+## 配置文件更新
+
+新版中Agent空闲时每5分钟或者启动时向服务端确认配置文件版本，如果有更新会自动同步
 
 ## 许可证说明
 
