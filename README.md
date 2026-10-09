@@ -96,7 +96,7 @@ Agent 读取主服务数据库中的许可证状态，无需另填许可证密�
 
 ## 发行文件
 
-[Releases](https://github.com/qiwentaidi/Hephaestus-Agent/releases) 提供 Linux/macOS amd64、arm64 和 Windows amd64 ZIP，以及 `release.json`、`SHA256SUMS.txt`。
+[Releases](https://github.com/qiwentaidi/Hephaestus-Agent/releases) 仅提供 Linux/macOS amd64、arm64 和 Windows amd64 ZIP，以及 `SHA256SUMS.txt`。版本与兼容信息由主服务的 `/api/v1/agent/release` 提供。
 
 `install.sh`、`install.bat`、`install.ps1` 保存在仓库的 [scripts/](https://github.com/qiwentaidi/Hephaestus-Agent/tree/v0.4.6/scripts) 目录，通过对应版本标签下载，不作为 Release 附件。安装器从 Release 获取程序，后续更新入口保持不变。
 
