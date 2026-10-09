@@ -2,7 +2,7 @@
 
 Hephaestus 的独立 Agent 节点，支持扫描与 AI Worker。**仅供有效 Pro 授权用户使用。** 本仓库只发布说明、安装器和已编译发行包；主项目与 Agent 源码保持闭源，用户不需要源码或编译环境。
 
-当前发行版本 **v0.4.6**，与 Hephaestus 主服务 **v0.4.6** 配套使用。
+最新发行版请查看 [latest](https://github.com/qiwentaidi/Hephaestus-Agent/releases/latest)。安装与更新会选择当前主服务要求的兼容版本。
 
 ## 下载并安装
 
@@ -13,7 +13,7 @@ Hephaestus 的独立 Agent 节点，支持扫描与 AI Worker。**仅供有效 P
 在终端运行：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/qiwentaidi/Hephaestus-Agent/v0.4.6/scripts/install.sh -o install.sh
+curl -fsSL https://raw.githubusercontent.com/qiwentaidi/Hephaestus-Agent/main/scripts/install.sh -o install.sh
 bash install.sh --server 'https://your-server'
 ```
 
@@ -37,10 +37,10 @@ sudo bash install.sh --server 'https://your-server' --service
 
 ### Windows amd64
 
-下载 [install.bat](https://raw.githubusercontent.com/qiwentaidi/Hephaestus-Agent/v0.4.6/scripts/install.bat) 后双击，或在 PowerShell 中运行：
+下载 [install.bat](https://raw.githubusercontent.com/qiwentaidi/Hephaestus-Agent/main/scripts/install.bat) 后双击，或在 PowerShell 中运行：
 
 ```powershell
-Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/qiwentaidi/Hephaestus-Agent/v0.4.6/scripts/install.bat' -OutFile install.bat
+Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/qiwentaidi/Hephaestus-Agent/main/scripts/install.bat' -OutFile install.bat
 .\install.bat -Server 'https://your-server'
 ```
 
@@ -52,7 +52,19 @@ BAT 内嵌完整 PowerShell 安装器。默认安装到 `%LOCALAPPDATA%\Hephaest
 & "$env:LOCALAPPDATA\Hephaestus\agent\run.bat"
 ```
 
-## 后续更新
+## 平台管理更新
+
+在「Agent 管理 → 更新管理」选择单个节点或勾选多个节点更新，也可以使用节点卡片上的「更新」入口。平台按顺序逐个执行，节点暂停领取新任务，等待当前 AI、扫描任务结束，再自动下载、校验和重启。配置、节点 ID、角色、容量与资源保留。
+
+界面显示排队、等待任务、下载、校验、重启和心跳确认状态。等待或下载阶段可取消；开始重启后不可取消。新版本心跳确认后才显示成功；启动失败尝试恢复上一程序并确认旧节点重新上线。
+
+首次使用平台更新时，必须安装支持托管更新的 Agent 并通过 `run.sh`、`run.bat` 或新版 systemd 服务启动。直接运行程序或旧版节点会提示「需首次手动升级」。内置 Worker 随主程序升级。
+
+旧节点首次迁移：先正常停止原节点，下载上面的最新安装脚本，指定原安装目录安装；已有 `config.yaml` 不会覆盖。Linux 既有 systemd 节点迁移时加 `--service`，让服务通过新版启动器运行。不要在原节点尚未退出时启动第二个节点。
+
+平台要求版本与当前节点一致时显示「版本已匹配」。实际跨版本更新测试需要较旧但已支持托管更新的节点，以及主服务要求的较新兼容发行包；旧版不支持托管的节点不能直接接收首次平台更新。
+
+## 手动更新（备用）
 
 **先正常停止前台节点，再运行更新器。** 更新器每次都重新查询主服务要求的版本，不盲目追随 GitHub latest；先完成下载、SHA-256 校验和实际二进制版本检查，再替换程序。配置、节点 ID、角色、容量和资源目录保留，同时保留上一份程序 `.previous`。
 
@@ -96,8 +108,8 @@ Agent 读取主服务数据库中的许可证状态，无需另填许可证密�
 
 ## 发行文件
 
-[Releases](https://github.com/qiwentaidi/Hephaestus-Agent/releases) 仅提供 Linux/macOS amd64、arm64 和 Windows amd64 ZIP，以及 `SHA256SUMS.txt`。版本与兼容信息由主服务的 `/api/v1/agent/release` 提供。
+[最新 Release](https://github.com/qiwentaidi/Hephaestus-Agent/releases/latest) 仅提供 Linux/macOS amd64、arm64 和 Windows amd64 ZIP，以及 `SHA256SUMS.txt`。版本与兼容信息由主服务的 `/api/v1/agent/release` 提供。
 
-`install.sh`、`install.bat`、`install.ps1` 保存在仓库的 [scripts/](https://github.com/qiwentaidi/Hephaestus-Agent/tree/v0.4.6/scripts) 目录，通过对应版本标签下载，不作为 Release 附件。安装器从 Release 获取程序，后续更新入口保持不变。
+`install.sh`、`install.bat`、`install.ps1` 保存在仓库的 [scripts/](https://github.com/qiwentaidi/Hephaestus-Agent/tree/main/scripts) 目录，通过固定的 main 分支下载入口获取，不作为 Release 附件。程序仍从主服务指定版本的 Release 下载，避免安装与平台不兼容的最新程序。
 
 GitHub 的 Source code ZIP/TAR 只包含本仓库的说明和安装脚本，并非 Agent 程序；需要手动安装时请选择对应平台的 `hephaestus-scan-agent_<os>_<arch>.zip`。

@@ -24,8 +24,19 @@ function Run-Node {
     $env:HEPHAESTUS_CONFIG_DIR = $InstallDir
     $env:HEPHAESTUS_RESOURCE_DIR = Join-Path $InstallDir 'config'
     Push-Location $InstallDir
-    try { & $Binary; $script:NodeExitCode = $LASTEXITCODE }
-    finally { Pop-Location }
+    $Supervisor = $null
+    try {
+        $HelpOutput = & $Binary help
+        if (($HelpOutput -join "`n") -match '(?m)^  supervise') {
+            $Supervisor = Join-Path $InstallDir ('.agent-supervisor-' + [Guid]::NewGuid().ToString('N') + '.exe')
+            Copy-Item -LiteralPath $Binary -Destination $Supervisor
+            & $Supervisor supervise --binary $Binary
+        } else { & $Binary }
+        $script:NodeExitCode = $LASTEXITCODE
+    } finally {
+        if ($Supervisor) { Remove-Item -LiteralPath $Supervisor -Force -ErrorAction SilentlyContinue }
+        Pop-Location
+    }
 }
 if ($Action -eq 'run') { Run-Node; exit $NodeExitCode }
 

@@ -85,10 +85,18 @@ run_node() {
   export HEPHAESTUS_CONFIG_DIR="$INSTALL_DIR"
   export HEPHAESTUS_RESOURCE_DIR="$INSTALL_DIR/config"
   # Existing environment overrides are retained; config.yaml is never sourced.
-  "$BIN" &
+  local supervisor=""
+  if "$BIN" help 2>/dev/null | grep -q '^  supervise'; then
+    supervisor="$INSTALL_DIR/.agent-supervisor-$$"
+    cp -p "$BIN" "$supervisor"
+    "$supervisor" supervise --binary "$BIN" &
+  else
+    "$BIN" &
+  fi
   child=$!
-  trap 'kill -TERM "$child" 2>/dev/null || true; wait "$child" || true; exit 130' INT TERM
+  trap 'kill -TERM "$child" 2>/dev/null || true; wait "$child" || true; if [[ -n "$supervisor" ]]; then rm -f "$supervisor"; fi; exit 130' INT TERM
   wait "$child" || result=$?
+  if [[ -n "$supervisor" ]]; then rm -f "$supervisor"; fi
   return "$result"
 }
 if [[ "$ACTION" == run ]]; then run_node; exit $?; fi
@@ -204,7 +212,8 @@ if [[ -f "$INSTALL_DIR/.service-name" ]]; then
   [[ "$(cat "$INSTALL_DIR/.service-name")" == "$SERVICE_NAME" ]] || fail "unknown managed service"
   MANAGED=1
   [[ "$(id -u)" -eq 0 ]] || fail "update this systemd installation with sudo"
-  [[ "$(systemctl show "$SERVICE_NAME" -p ExecStart --value)" == *"$BIN"* ]] || fail "service points to a different installation"
+  SERVICE_COMMAND="$(systemctl show "$SERVICE_NAME" -p ExecStart --value)"
+  [[ "$SERVICE_COMMAND" == *"$BIN"* || "$SERVICE_COMMAND" == *"$INSTALL_DIR/run.sh"* ]] || fail "service points to a different installation"
   systemctl stop "$SERVICE_NAME" || fail "service did not acknowledge stop; binary was not replaced"
   STATE="$(systemctl show "$SERVICE_NAME" -p ActiveState --value)"
   [[ "$STATE" == inactive ]] || fail "service has not stopped; binary was not replaced"
@@ -243,7 +252,7 @@ Type=simple
 WorkingDirectory="$UNIT_DIR"
 Environment="HEPHAESTUS_CONFIG_DIR=$UNIT_DIR"
 Environment="HEPHAESTUS_RESOURCE_DIR=$UNIT_DIR/config"
-ExecStart="$UNIT_DIR/$APP"
+ExecStart="$UNIT_DIR/run.sh"
 Restart=on-failure
 RestartSec=5
 TimeoutStopSec=90
