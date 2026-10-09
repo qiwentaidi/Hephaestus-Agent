@@ -1,0 +1,5 @@
+.DS_Store
+*.zip
+*.exe
+config.yaml
+agent.env
