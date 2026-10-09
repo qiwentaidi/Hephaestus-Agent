@@ -13,7 +13,7 @@ Hephaestus 的独立 Agent 节点，支持扫描与 AI Worker。**仅供有效 P
 在终端运行：
 
 ```bash
-curl -fsSL https://github.com/qiwentaidi/Hephaestus-Agent/releases/download/v0.4.6/install.sh -o install.sh
+curl -fsSL https://raw.githubusercontent.com/qiwentaidi/Hephaestus-Agent/v0.4.6/scripts/install.sh -o install.sh
 bash install.sh --server 'https://your-server'
 ```
 
@@ -37,10 +37,10 @@ sudo bash install.sh --server 'https://your-server' --service
 
 ### Windows amd64
 
-下载 [install.bat](https://github.com/qiwentaidi/Hephaestus-Agent/releases/download/v0.4.6/install.bat) 后双击，或在 PowerShell 中运行：
+下载 [install.bat](https://raw.githubusercontent.com/qiwentaidi/Hephaestus-Agent/v0.4.6/scripts/install.bat) 后双击，或在 PowerShell 中运行：
 
 ```powershell
-Invoke-WebRequest -Uri 'https://github.com/qiwentaidi/Hephaestus-Agent/releases/download/v0.4.6/install.bat' -OutFile install.bat
+Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/qiwentaidi/Hephaestus-Agent/v0.4.6/scripts/install.bat' -OutFile install.bat
 .\install.bat -Server 'https://your-server'
 ```
 
@@ -96,6 +96,8 @@ Agent 读取主服务数据库中的许可证状态，无需另填许可证密�
 
 ## 发行文件
 
-[Releases](https://github.com/qiwentaidi/Hephaestus-Agent/releases) 提供 Linux/macOS amd64、arm64 和 Windows amd64 ZIP，以及 `install.sh`、`install.bat`、`install.ps1`、`release.json`、`SHA256SUMS.txt`。
+[Releases](https://github.com/qiwentaidi/Hephaestus-Agent/releases) 提供 Linux/macOS amd64、arm64 和 Windows amd64 ZIP，以及 `release.json`、`SHA256SUMS.txt`。
+
+`install.sh`、`install.bat`、`install.ps1` 保存在仓库的 [scripts/](https://github.com/qiwentaidi/Hephaestus-Agent/tree/v0.4.6/scripts) 目录，通过对应版本标签下载，不作为 Release 附件。安装器从 Release 获取程序，后续更新入口保持不变。
 
 GitHub 的 Source code ZIP/TAR 只包含本仓库的说明和安装脚本，并非 Agent 程序；需要手动安装时请选择对应平台的 `hephaestus-scan-agent_<os>_<arch>.zip`。
