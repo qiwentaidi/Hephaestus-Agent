@@ -164,8 +164,8 @@ database:
 agent:
   id: ''
   roles: $RoleYaml
-  aiConcurrency: 1
-  scanConcurrency: 1
+  aiConcurrency: 2
+  scanConcurrency: 3
   server:
     address: $(Yaml-String $Server)
 "@
