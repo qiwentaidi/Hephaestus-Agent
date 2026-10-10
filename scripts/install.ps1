@@ -19,6 +19,31 @@ New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
 $Binary = Join-Path $InstallDir $App
 
 function Write-Log([string]$Message) { Write-Host "[hephaestus-agent] $Message" }
+function Invoke-AgentDownload([string]$Uri, [string]$Resource, [string]$OutFile = '', [int]$TimeoutSec = 30) {
+    $Options = @{ UseBasicParsing = $true; Uri = $Uri; TimeoutSec = $TimeoutSec }
+    if ($OutFile) { $Options.OutFile = $OutFile }
+    try { return Invoke-WebRequest @Options }
+    catch {
+        $Original = $_.Exception.Message
+        $Status = $null
+        $TimedOut = $false
+        $Interrupted = $false
+        for ($Cause = $_.Exception; $Cause; $Cause = $Cause.InnerException) {
+            if ($Cause.Response -and $Cause.Response.StatusCode) { $Status = [int]$Cause.Response.StatusCode }
+            if ($Cause -is [TimeoutException] -or $Cause -is [OperationCanceledException]) { $TimedOut = $true }
+            if ($Cause -is [Net.WebException]) {
+                if ($Cause.Status -eq [Net.WebExceptionStatus]::Timeout) { $TimedOut = $true }
+                if ($Cause.Status -in @([Net.WebExceptionStatus]::ReceiveFailure, [Net.WebExceptionStatus]::SendFailure, [Net.WebExceptionStatus]::ConnectionClosed)) { $Interrupted = $true }
+            }
+        }
+        if ($Status -eq 404) { $Detail = 'HTTP 404: requested file or endpoint was not found; check the server/version and release address.' }
+        elseif ($Status) { $Detail = "Server returned HTTP $Status; retry or check access to the download server." }
+        elseif ($TimedOut) { $Detail = 'Request timed out; check network connectivity and proxy settings, then retry.' }
+        elseif ($Interrupted) { $Detail = 'Connection interrupted or reset; check network connectivity and proxy settings, then retry.' }
+        else { $Detail = 'Download failed; check network connectivity, DNS, proxy settings, directory permissions and disk space.' }
+        throw "${Resource}: $Detail Original error: $Original"
+    }
+}
 function Run-Node {
     if (!(Test-Path $Binary) -or !(Test-Path (Join-Path $InstallDir 'config.yaml'))) { throw 'Install and configure the node first.' }
     $env:HEPHAESTUS_CONFIG_DIR = $InstallDir
@@ -61,7 +86,7 @@ try {
     $NativeArch = $env:PROCESSOR_ARCHITEW6432
     if (!$NativeArch) { $NativeArch = $env:PROCESSOR_ARCHITECTURE }
     if ($NativeArch -ne 'AMD64') { throw 'This release supports Windows amd64 only. ARM64 requires a separately supported package.' }
-    $Recommended = (Invoke-WebRequest -UseBasicParsing -Uri "$Server/api/v1/agent/release?format=text" -TimeoutSec 30).Content.Trim()
+    $Recommended = (Invoke-AgentDownload -Uri "$Server/api/v1/agent/release?format=text" -Resource 'Compatible version query').Content.Trim()
     if ($Recommended -notmatch '^v\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?$') { throw 'Invalid compatible version response.' }
     if ($Version -and $Version -ne $Recommended) { throw "Version $Version is incompatible; the server recommends $Recommended." }
     $Version = $Recommended
@@ -70,8 +95,8 @@ try {
     New-Item -ItemType Directory -Path $TempDir | Out-Null
     $Archive = Join-Path $TempDir 'package.zip'
     Write-Log "Downloading $Version (Windows/amd64)"
-    Invoke-WebRequest -UseBasicParsing -Uri "$ReleaseBase/$Version/$Package" -OutFile $Archive -TimeoutSec 300
-    $Checksums = (Invoke-WebRequest -UseBasicParsing -Uri "$ReleaseBase/$Version/SHA256SUMS.txt" -TimeoutSec 30).Content
+    Invoke-AgentDownload -Uri "$ReleaseBase/$Version/$Package" -Resource "Release $Version package $Package" -OutFile $Archive -TimeoutSec 300
+    $Checksums = (Invoke-AgentDownload -Uri "$ReleaseBase/$Version/SHA256SUMS.txt" -Resource "Release $Version checksum file").Content
     $MatchesForPackage = @($Checksums -split '\r?\n' | Where-Object { $_ -match ('^[a-fA-F0-9]{64}\s+\*?' + [regex]::Escape($Package) + '$') })
     if ($MatchesForPackage.Count -ne 1) { throw 'Missing or ambiguous package checksum.' }
     $Expected = ($MatchesForPackage[0] -split '\s+')[0]
@@ -89,7 +114,7 @@ try {
         throw 'Binary cannot run on this host or its version does not match the release.'
     }
     $StagedScript = Join-Path $TempDir 'install.ps1'
-    Invoke-WebRequest -UseBasicParsing -Uri "$Server/api/v1/agent/install.ps1" -OutFile $StagedScript -TimeoutSec 30
+    Invoke-AgentDownload -Uri "$Server/api/v1/agent/install.ps1" -Resource 'Updater script' -OutFile $StagedScript
     $Tokens = $null; $ParseErrors = $null
     [System.Management.Automation.Language.Parser]::ParseFile($StagedScript, [ref]$Tokens, [ref]$ParseErrors) | Out-Null
     if ($ParseErrors.Count) { throw 'The server supplied an invalid updater script.' }

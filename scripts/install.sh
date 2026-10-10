@@ -116,22 +116,44 @@ case "$(uname -m)" in x86_64|amd64) ARCH=amd64;; arm64|aarch64) ARCH=arm64;; *) 
 [[ "$SERVICE" -eq 0 || ( "$OS" == linux && "$(id -u)" -eq 0 ) ]] || fail "--service requires Linux and root"
 
 download() {
+  local status="" result=0 detail="" resource="${3:-download}" error_log="$2.download-error"
   if command -v curl >/dev/null 2>&1; then
-    curl -fsSL --retry 2 --connect-timeout 10 --max-time 300 "$1" -o "$2"
+    if status="$(curl -fsSL --retry 2 --connect-timeout 10 --max-time 300 --write-out '%{http_code}' "$1" -o "$2")"; then return 0;
+    else result=$?; fi
+    case "$result" in
+      28) detail="request timed out; check network connectivity and proxy settings, then retry";;
+      6) detail="DNS lookup failed; check DNS and proxy settings, then retry";;
+      7) detail="cannot connect to the download server; check network connectivity and proxy settings";;
+      18|52|55|56) detail="connection interrupted or reset; check network connectivity and proxy settings, then retry";;
+      22)
+        if [[ "$status" == 404 ]]; then detail="HTTP 404: requested file or endpoint was not found; check the server/version and release address";
+        else detail="server returned HTTP $status; retry or check access to the download server"; fi;;
+      23) detail="cannot write the downloaded file; check directory permissions and free disk space";;
+      35|60) detail="TLS connection or certificate verification failed; check system time, certificates and proxy settings";;
+      *) detail="download failed (curl exit $result, HTTP ${status:-unknown}); see the original error above";;
+    esac
   elif command -v wget >/dev/null 2>&1; then
-    wget -q --timeout=300 -O "$2" "$1"
+    if wget --server-response --timeout=300 -O "$2" "$1" 2>"$error_log"; then rm -f "$error_log"; return 0;
+    else result=$?; fi
+    status="$(awk '/^[[:space:]]*HTTP\// {code=$2} END {print code}' "$error_log")"
+    if [[ "$result" == 8 && "$status" == 404 ]]; then detail="HTTP 404: requested file or endpoint was not found; check the server/version and release address";
+    elif [[ "$result" == 8 ]]; then detail="server returned HTTP ${status:-unknown}; retry or check access to the download server";
+    elif grep -qi 'timed out\|timeout' "$error_log"; then detail="request timed out; check network connectivity and proxy settings, then retry";
+    else detail="download failed (wget exit $result); check network, DNS, proxy settings, directory permissions and disk space"; fi
+    tail -n 3 "$error_log" >&2
   else fail "install curl or wget first"; fi
+  fail "$resource: $detail"
 }
 TMP="$(mktemp -d)"
-download "$SERVER/api/v1/agent/release?format=text" "$TMP/version" || fail "cannot query compatible version; update the main server first"
+download "$SERVER/api/v1/agent/release?format=text" "$TMP/version" "compatible version query"
 RECOMMENDED="$(tr -d '\r\n' < "$TMP/version")"
 [[ "$RECOMMENDED" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]] || fail "invalid server version response"
 [[ -z "$VERSION" || "$VERSION" == "$RECOMMENDED" ]] || fail "$VERSION is incompatible; server recommends $RECOMMENDED"
 VERSION="$RECOMMENDED"
 PACKAGE="${APP}_${OS}_${ARCH}.zip"
 log "Downloading $VERSION ($OS/$ARCH)"
-download "$RELEASE_BASE/$VERSION/$PACKAGE" "$TMP/package.zip" || fail "release $VERSION has no $PACKAGE; publish the matching release first"
-download "$RELEASE_BASE/$VERSION/SHA256SUMS.txt" "$TMP/checksums" || fail "release checksum file is missing"
+download "$RELEASE_BASE/$VERSION/$PACKAGE" "$TMP/package.zip" "release $VERSION package $PACKAGE"
+download "$RELEASE_BASE/$VERSION/SHA256SUMS.txt" "$TMP/checksums" "release $VERSION checksum file"
 EXPECTED="$(awk -v name="$PACKAGE" '$2 == name || $2 == "*" name {print $1}' "$TMP/checksums")"
 [[ "$EXPECTED" =~ ^[a-fA-F0-9]{64}$ ]] || fail "missing or ambiguous package checksum"
 if command -v sha256sum >/dev/null 2>&1; then ACTUAL="$(sha256sum "$TMP/package.zip" | awk '{print $1}')";
@@ -201,7 +223,7 @@ mkdir -p "$INSTALL_DIR/config"
 if [[ -f "${BASH_SOURCE[0]}" && "${BASH_SOURCE[0]}" != "$INSTALL_DIR/install.sh" ]]; then
   cp "${BASH_SOURCE[0]}" "$TMP/install.sh"
 else
-  download "$SERVER/api/v1/agent/install.sh" "$TMP/install.sh" || fail "cannot save updater"
+  download "$SERVER/api/v1/agent/install.sh" "$TMP/install.sh" "updater script"
 fi
 bash -n "$TMP/install.sh"
 
