@@ -188,14 +188,14 @@ if [[ ! -f "$INSTALL_DIR/config.yaml" ]]; then
     [[ -n "$DB_HOST" ]] || fail "PostgreSQL host is required"
     ask 'PostgreSQL port' 5432; DB_PORT="$REPLY"
     [[ "$DB_PORT" =~ ^[0-9]+$ && "$DB_PORT" -gt 0 && "$DB_PORT" -le 65535 ]] || fail "invalid port"
-    ask 'Database user' hephaestus_agent; DB_USER="$REPLY"
+    ask 'Database user' postgres; DB_USER="$REPLY"
     printf 'Database password: ' > /dev/tty
     read -rs DB_PASSWORD < /dev/tty || fail "configuration cancelled"
     printf '\n' > /dev/tty
     ask 'Database name' hephaestus; DB_NAME="$REPLY"
-    ask 'PostgreSQL sslmode (require / verify-full / disable)' require; DB_SSLMODE="$REPLY"
+    ask 'PostgreSQL sslmode (require / verify-full / disable)' disable; DB_SSLMODE="$REPLY"
     case "$DB_SSLMODE" in disable|require|verify-ca|verify-full) ;; *) fail "invalid sslmode";; esac
-    ask 'Agent roles (scan / ai / ai,scan)' scan; ROLES="$REPLY"
+    ask 'Agent roles (scan / ai / ai,scan)' ai,scan; ROLES="$REPLY"
     case "$ROLES" in scan) ROLE_YAML="['scan']";; ai) ROLE_YAML="['ai']";; ai,scan|scan,ai) ROLE_YAML="['ai', 'scan']";; *) fail "invalid roles";; esac
     cat > "$TMP/config.yaml" <<EOF
 database:

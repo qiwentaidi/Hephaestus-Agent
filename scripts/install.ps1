@@ -136,15 +136,15 @@ try {
             if (!$DbHost) { throw 'PostgreSQL host is required.' }
             $DbPort = Ask 'PostgreSQL port' '5432'
             if ($DbPort -notmatch '^\d+$' -or [int]$DbPort -lt 1 -or [int]$DbPort -gt 65535) { throw 'Invalid PostgreSQL port.' }
-            $DbUser = Ask 'Database user' 'hephaestus_agent'
+            $DbUser = Ask 'Database user' 'postgres'
             $Secret = Read-Host 'Database password' -AsSecureString
             $SecretPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($Secret)
             try { $DbPassword = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($SecretPointer) }
             finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($SecretPointer) }
             $DbName = Ask 'Database name' 'hephaestus'
-            $SslMode = Ask 'PostgreSQL sslmode (require / verify-full / disable)' 'require'
+            $SslMode = Ask 'PostgreSQL sslmode (require / verify-full / disable)' 'disable'
             if ($SslMode -notin @('disable', 'require', 'verify-ca', 'verify-full')) { throw 'Invalid sslmode.' }
-            $Roles = Ask 'Agent roles (scan / ai / ai,scan)' 'scan'
+            $Roles = Ask 'Agent roles (scan / ai / ai,scan)' 'ai,scan'
             switch ($Roles) {
                 'scan' { $RoleYaml = "['scan']" }
                 'ai' { $RoleYaml = "['ai']" }
