@@ -112,4 +112,4 @@ Agent 读取主服务数据库中的许可证状态，无需另填许可证密�
 
 `install.sh`、`install.bat`、`install.ps1` 保存在仓库的 [scripts/](https://github.com/qiwentaidi/Hephaestus-Agent/tree/main/scripts) 目录，通过固定的 main 分支下载入口获取，不作为 Release 附件。程序仍从主服务指定版本的 Release 下载，避免安装与平台不兼容的最新程序。
 
-GitHub 的 Source code ZIP/TAR 只包含本仓库的说明和安装脚本，并非 Agent 程序；需要手动安装时请选择对应平台的 `hephaestus-scan-agent_<os>_<arch>.zip`。
+GitHub 的 Source code ZIP/TAR 只包含本仓库的说明和安装脚本，并非 Agent 程序；需要手动安装时请选择对应平台的 `hephaestus-agent-<os>-<arch>.zip`。

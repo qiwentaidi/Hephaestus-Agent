@@ -90,7 +90,7 @@ try {
     if ($Recommended -notmatch '^v\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?$') { throw 'Invalid compatible version response.' }
     if ($Version -and $Version -ne $Recommended) { throw "Version $Version is incompatible; the server recommends $Recommended." }
     $Version = $Recommended
-    $Package = 'hephaestus-scan-agent_windows_amd64.zip'
+    $Package = 'hephaestus-agent-windows-amd64.zip'
     $TempDir = Join-Path ([IO.Path]::GetTempPath()) ('hephaestus-agent-' + [Guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $TempDir | Out-Null
     $Archive = Join-Path $TempDir 'package.zip'
