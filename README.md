@@ -33,7 +33,7 @@ Linux 可选择安装 systemd 服务：
 sudo bash install.sh --server 'https://your-server' --service
 ```
 
-服务默认目录 `/opt/hephaestus/agent`，服务名 `hephaestus-scan-agent`。
+服务默认目录仍为当前目录下的 `hephaestus-agent`，与前台安装一致；`--service` 只改变运行方式。服务名为 `hephaestus-scan-agent`，其他安装目录通过 `--install-dir` 显式指定。
 
 ### Windows amd64
 
@@ -44,12 +44,12 @@ Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/qiwentaidi/Hephaestus-
 .\install.bat -Server 'https://your-server'
 ```
 
-BAT 内嵌完整 PowerShell 安装器。默认安装到 `%LOCALAPPDATA%\Hephaestus\agent`，首次交互配置 PostgreSQL 与节点角色，数据库配置只允许当前用户和 SYSTEM 访问。参数支持 `-InstallDir`、`-ConfigFile`、`-NoStart`。
+BAT 内嵌完整 PowerShell 安装器。默认安装到当前目录下的 `hephaestus-agent`，首次交互配置 PostgreSQL 与节点角色，数据库配置只允许当前用户和 SYSTEM 访问。参数支持 `-InstallDir`、`-ConfigFile`、`-NoStart`。
 
 默认前台运行，正常退出使用 Ctrl+C。再次运行：
 
 ```powershell
-& "$env:LOCALAPPDATA\Hephaestus\agent\run.bat"
+& '.\hephaestus-agent\run.bat'
 ```
 
 ## 平台管理更新
@@ -77,7 +77,7 @@ bash ./hephaestus-agent/update.sh
 Linux systemd 安装可以自动正常停止并重启服务：
 
 ```bash
-sudo bash /opt/hephaestus/agent/update.sh
+sudo bash ./hephaestus-agent/update.sh
 ```
 
 停止没有确认时不替换程序，不强杀仍在运行的 Worker。新服务启动检查失败时尝试恢复上一程序；服务启动后仍需在 Agent 管理页确认版本和心跳。
@@ -85,7 +85,7 @@ sudo bash /opt/hephaestus/agent/update.sh
 Windows，在 PowerShell 中执行：
 
 ```powershell
-& "$env:LOCALAPPDATA\Hephaestus\agent\update.bat"
+& '.\hephaestus-agent\update.bat'
 ```
 
 自定义安装目录请使用该目录中的 run/update 脚本。Windows 安装器不强制终止任务，也不注册 Windows 服务；macOS 默认同样使用前台运行。

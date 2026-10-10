@@ -37,9 +37,10 @@ Options:
   --version VERSION     Require this version to match the server recommendation.
   --release-base URL    Release download mirror (including /releases/download).
   --no-start            Download/configure without starting the node.
-  --service             Install a Linux systemd service (requires root).
+  --service             Run via Linux systemd (requires root; same install directory).
   --config FILE         Copy an existing node config on first install only.
 
+Default install directory: ./hephaestus-agent, including --service.
 First installation asks for PostgreSQL credentials if no config is present.
 Updates preserve config.yaml, node identity, environment and resources.
 Stop a foreground node with Ctrl+C before updating. Managed systemd services
@@ -68,8 +69,6 @@ done
 if [[ -z "$INSTALL_DIR" ]]; then
   if [[ -f "$(dirname "${BASH_SOURCE[0]}")/.installed-version" ]]; then
     INSTALL_DIR="$(dirname "${BASH_SOURCE[0]}")"
-  elif [[ "$SERVICE" -eq 1 ]]; then
-    INSTALL_DIR=/opt/hephaestus/agent
   else
     INSTALL_DIR="$PWD/hephaestus-agent"
   fi

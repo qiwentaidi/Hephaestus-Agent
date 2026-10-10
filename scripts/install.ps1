@@ -12,7 +12,7 @@ $ErrorActionPreference = 'Stop'
 $App = 'hephaestus-scan-agent.exe'
 if (!$InstallDir) {
     if (Test-Path (Join-Path $PSScriptRoot '.installed-version')) { $InstallDir = $PSScriptRoot }
-    else { $InstallDir = Join-Path $env:LOCALAPPDATA 'Hephaestus\agent' }
+    else { $InstallDir = Join-Path $PWD.Path 'hephaestus-agent' }
 }
 $InstallDir = [IO.Path]::GetFullPath($InstallDir)
 New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
