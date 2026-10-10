@@ -18,6 +18,14 @@ SERVICE_NAME=hephaestus-scan-agent
 
 log() { printf '[hephaestus-agent] %s\n' "$*" >&2; }
 fail() { log "ERROR: $*"; exit 1; }
+valid_config_value() {
+  [[ "$1" != *$'\n'* && "$1" != *$'\r'* ]] || return 1
+  printf '%s' "$1" | iconv -f UTF-8 -t UTF-8 >/dev/null 2>&1
+}
+validate_config_file() {
+  command -v iconv >/dev/null 2>&1 || fail "install iconv first to validate configuration encoding"
+  iconv -f UTF-8 -t UTF-8 "$1" >/dev/null 2>&1 || fail "config.yaml contains invalid UTF-8; correct the input or file encoding before starting the node"
+}
 usage() {
   cat <<'EOF'
 Hephaestus Agent installer (Linux / macOS)
@@ -78,6 +86,7 @@ trap cleanup EXIT
 
 run_node() {
   [[ -x "$BIN" && -f "$INSTALL_DIR/config.yaml" ]] || fail "install/configure the node first"
+  validate_config_file "$INSTALL_DIR/config.yaml"
   mkdir "$INSTALL_DIR/.run-lock" 2>/dev/null || fail "node is already running; if it crashed, remove .run-lock after checking the process"
   local child result=0
   trap 'rmdir "$INSTALL_DIR/.run-lock" 2>/dev/null || true; cleanup' EXIT
@@ -168,30 +177,40 @@ OUTPUT="$("$TMP/$APP" version)" || fail "binary cannot run on this host; install
 
 yaml_string() {
   [[ "$1" != *$'\n'* && "$1" != *$'\r'* ]] || fail "configuration values must be single-line"
-  local value="${1//\'/\'\'}"
+  local value="$1" quote="'"
+  value="${value//$quote/$quote$quote}"
   printf "'%s'" "$value"
 }
 ask() {
   local label="$1" fallback="$2" value
   [[ -r /dev/tty ]] || fail "provide --config FILE for non-interactive installation"
-  printf '%s [%s]: ' "$label" "$fallback" > /dev/tty
-  read -r value < /dev/tty || fail "configuration cancelled"
-  REPLY="${value:-$fallback}"
+  while true; do
+    printf '%s [%s]: ' "$label" "$fallback" > /dev/tty
+    read -r value < /dev/tty || fail "configuration cancelled"
+    REPLY="${value:-$fallback}"
+    if valid_config_value "$REPLY"; then return; fi
+    log "Invalid $label: use valid UTF-8 text on a single line; please re-enter this field."
+  done
 }
 if [[ ! -f "$INSTALL_DIR/config.yaml" ]]; then
   if [[ -n "$CONFIG_SOURCE" ]]; then
     [[ -f "$CONFIG_SOURCE" ]] || fail "config file does not exist"
     cp "$CONFIG_SOURCE" "$TMP/config.yaml"
   else
+    command -v iconv >/dev/null 2>&1 || fail "install iconv first to validate configuration encoding"
     log "Configure the same PostgreSQL database as the main server. Password is not echoed."
     ask 'PostgreSQL host (reachable from this node)' ''; DB_HOST="$REPLY"
     [[ -n "$DB_HOST" ]] || fail "PostgreSQL host is required"
     ask 'PostgreSQL port' 5432; DB_PORT="$REPLY"
     [[ "$DB_PORT" =~ ^[0-9]+$ && "$DB_PORT" -gt 0 && "$DB_PORT" -le 65535 ]] || fail "invalid port"
     ask 'Database user' postgres; DB_USER="$REPLY"
-    printf 'Database password: ' > /dev/tty
-    read -rs DB_PASSWORD < /dev/tty || fail "configuration cancelled"
-    printf '\n' > /dev/tty
+    while true; do
+      printf 'Database password: ' > /dev/tty
+      read -rs DB_PASSWORD < /dev/tty || fail "configuration cancelled"
+      printf '\n' > /dev/tty
+      if valid_config_value "$DB_PASSWORD"; then break; fi
+      log "Invalid password encoding: use valid UTF-8 text on a single line; please re-enter the password."
+    done
     ask 'Database name' hephaestus; DB_NAME="$REPLY"
     ask 'PostgreSQL sslmode (require / verify-full / disable)' disable; DB_SSLMODE="$REPLY"
     case "$DB_SSLMODE" in disable|require|verify-ca|verify-full) ;; *) fail "invalid sslmode";; esac
@@ -216,8 +235,10 @@ agent:
 EOF
     unset DB_PASSWORD
   fi
+  validate_config_file "$TMP/config.yaml"
   install -m 0600 "$TMP/config.yaml" "$INSTALL_DIR/config.yaml"
 fi
+validate_config_file "$INSTALL_DIR/config.yaml"
 mkdir -p "$INSTALL_DIR/config"
 # Copy the installer for repeatable updates, including when launched from a pipe.
 if [[ -f "${BASH_SOURCE[0]}" && "${BASH_SOURCE[0]}" != "$INSTALL_DIR/install.sh" ]]; then

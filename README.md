@@ -17,7 +17,7 @@ curl -fsSL https://raw.githubusercontent.com/qiwentaidi/Hephaestus-Agent/main/sc
 bash install.sh --server 'https://your-server'
 ```
 
-默认安装到当前目录下的 `hephaestus-agent`，支持 amd64 和 arm64。需要 Bash、curl 或 wget、unzip，以及 sha256sum 或 shasum。Linux 的 AI 执行工具仍需要 Bubblewrap；Python、stdio MCP 等运行依赖应在节点准备。
+默认安装到当前目录下的 `hephaestus-agent`，支持 amd64 和 arm64。需要 Bash、curl 或 wget、unzip、iconv，以及 sha256sum 或 shasum。配置使用 UTF-8；输入编码无效时会要求重新输入对应字段，已有配置编码无效时会在启动前提示修正。Linux 的 AI 执行工具仍需要 Bubblewrap；Python、stdio MCP 等运行依赖应在节点准备。
 
 首次安装会询问 PostgreSQL 地址、账号、密码、数据库和节点角色。密码不回显，`config.yaml` 权限为 `0600`。已有配置不覆盖；非交互安装可传 `--config /path/to/node-config.yaml`。仅安装、不启动可传 `--no-start`；指定目录可传 `--install-dir /path/to/agent`。
 
