@@ -227,7 +227,7 @@ database:
 agent:
   id: ''
   roles: $ROLE_YAML
-  aiConcurrency: 2
+  aiConcurrency: 4
   scanConcurrency: 3
   server:
     address: $(yaml_string "$SERVER")
